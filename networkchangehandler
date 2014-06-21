@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# Change event will be triggered after connecting to NETWORKNAME
+NETWORKNAME=officenetwork
+
+# This file will be created to indicate the network has changed to NETWORKNAME
+# It will be deleted after disconnecting from NETWORKNAME
+CHANGEFLAG=/.networkchangehandler
+
+# Log info
+LOGDIR=/var/log/networkchangehandler
+LOGFILE=$LOGDIR/output.log
+
+# current date time
+DATE=$(date "+%Y-%m-%d %H:%M:%S")
+
+function checkLogDir()
+{
+	if [ ! -d $LOGDIR ]; then
+		mkdir $LOGDIR
+		touch $LOGFILE
+	fi
+}
+
+function logger()
+{
+	checkLogDir
+	echo "[$DATE] ${1}" >> $LOGFILE
+}
+
+function changeEventHandler()
+{
+	# Set of commands to execute when change event triggers
+}
+
+function changeEventReverter()
+{
+	# Set of commands to execute when network changes back
+}
+
+# Gets the connected network's SSID using the airport command
+# Available only on Macbook
+SSID=$(/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I|grep " SSID"|awk '{split($0,a,":"); print a[2]}'|sed 's/^ *//')
+
+if [ "$SSID" == "$NETWORKNAME" ]; then
+	logger "Connected to $NETWORKNAME"
+	if [[ ! -f $CHANGEFLAG ]]; then
+		touch $CHANGEFLAG
+		logger "Network change event"
+		changeEventHandler
+	fi
+else
+	logger "SSID = $SSID"
+	if [ -f $CHANGEFLAG ]; then
+		rm $CHANGEFLAG
+		logger "Reversing network change"
+		changeEventReverter
+	fi
+fi
